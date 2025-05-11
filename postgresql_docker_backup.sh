@@ -128,7 +128,9 @@ remove_old_backups() {
 
 # Function to backup PostgreSQL database
 backup_postgres_database() {
-    local backup_file="$TIMESTAMPED_BACKUP_PATH/db_backup_$DATETIME.sql"
+    # Set default prefix if not defined in .env
+    local prefix=${BACKUPS_FILE_PREFIX:-postgres_docker_backup}
+    local backup_file="$TIMESTAMPED_BACKUP_PATH/${prefix}_$DATETIME.sql"
     
     log_message "Target Database: $BACKUPS_DATABASE_NAME"
     log_message "Container: $BACKUPS_CONTAINER_NAME"
