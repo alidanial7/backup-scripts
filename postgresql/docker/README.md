@@ -1,147 +1,118 @@
 # PostgreSQL Docker Backup Script
 
-A robust shell script for automating PostgreSQL database backups from Docker containers with comprehensive logging and error handling.
+This script provides automated backup functionality for PostgreSQL databases running in Docker containers. It includes features for creating compressed backups, managing retention policies, and detailed logging.
 
 ## 🚀 Features
 
 - Automated PostgreSQL database backups from Docker containers
-- Atomic backup operations using temporary directories
+- Automatic compression of backup files (ZIP format)
 - Configurable backup retention policy
-- Detailed logging system with timestamps and section markers
-- Comprehensive error handling and validation
-- Clean backup rotation with configurable retention
-- Environment-based configuration
-- Help system with detailed usage information
+- Detailed logging with timestamps
+- Automatic creation of backup directories
+- Error handling and validation
+- Cleanup of old backups
 
 ## 📋 Prerequisites
 
 - Docker installed and running
 - PostgreSQL container running
+- `zip` command-line utility installed
 - Bash shell environment
-- Required utilities:
-  - `docker` for container management
-  - `pg_dump` for PostgreSQL backups
-
-## 🛠️ Installation
-
-1. Navigate to the PostgreSQL Docker backup directory:
-
-```bash
-cd postgresql/docker
-```
-
-2. Make the script executable:
-
-```bash
-chmod +x postgresql_docker_backup.sh
-```
-
-3. Copy the example environment file and configure it:
-
-```bash
-cp .env.example .env
-```
-
-4. Edit the `.env` file with your settings:
-
-```bash
-nano .env
-```
 
 ## ⚙️ Configuration
 
-Configure your backup settings in the `.env` file:
+Create a `.env` file in the same directory as the script with the following variables:
 
-```bash
-# Container and Database Settings
-BACKUPS_CONTAINER_NAME=postgres    # Name of your PostgreSQL container
-BACKUPS_DATABASE_NAME=mydb         # Database to backup
-BACKUPS_DATABASE_USER=postgres     # Database user with backup privileges
+```env
+# Required Variables
+BACKUPS_CONTAINER_NAME=your_postgres_container_name
+BACKUPS_DATABASE_NAME=your_database_name
+BACKUPS_DATABASE_USER=your_database_user
+BACKUPS_BACKUP_PATH=/path/to/backup/directory
+BACKUPS_LOG_FILE=/path/to/log/file.log
 
-# Backup Settings
-BACKUPS_BACKUP_PATH=./backup       # Directory to store backups
-BACKUPS_LOG_FILE=./logs/log.log    # Path to log file
-BACKUPS_MAX_FILES=4                # Number of backups to retain
+# Optional Variables
+BACKUPS_MAX_FILES=5  # Number of backups to keep (default: 5)
 BACKUPS_FILE_PREFIX=postgres_docker_backup  # Prefix for backup files
 ```
 
 ## 🚀 Usage
 
-Run the backup script:
+1. Make the script executable:
 
-```bash
-./postgresql_docker_backup.sh
-```
+   ```bash
+   chmod +x postgresql_docker_backup.sh
+   ```
 
-For help and usage information:
+2. Run the script:
 
-```bash
-./postgresql_docker_backup.sh --help
-```
+   ```bash
+   ./postgresql_docker_backup.sh
+   ```
 
-For scheduled backups, add to crontab:
+3. For help:
+   ```bash
+   ./postgresql_docker_backup.sh --help
+   ```
 
-```bash
-# Daily backup at midnight
-0 0 * * * /path/to/postgresql/docker/postgresql_docker_backup.sh
-```
+## 🔄 Backup Process
 
-## 📁 Backup Structure
+1. Validates environment variables and required paths
+2. Creates backup directory if it doesn't exist
+3. Creates a temporary directory for the backup
+4. Executes `pg_dump` to create the database backup
+5. Compresses the backup file into ZIP format
+6. Removes the original SQL file after successful compression
+7. Applies retention policy to remove old backups
+8. Logs all operations with timestamps
 
-Backups are stored in the following format:
+## 📁 Backup File Format
 
-```
-backup/
-├── postgres_docker_backup_20240320_120000.sql
-├── postgres_docker_backup_20240319_120000.sql
-└── postgres_docker_backup_20240318_120000.sql
-```
+Backup files are stored in the following format:
+
+- `{prefix}_{YYYYMMDD_HHMMSS}.zip`
+
+Example: `postgres_docker_backup_20240315_143022.zip`
 
 ## 📝 Logging
 
-The script implements a comprehensive logging system that includes:
+The script maintains detailed logs including:
 
-- Timestamped log entries with millisecond precision
-- Section markers for major operations
-- Detailed configuration summaries
-- Success/failure status for each operation
-- Error messages and stack traces
-- Backup rotation events
-- Console output for important messages only
-
-Log entries are formatted as:
-
-```
-[2024-03-20 12:00:00.123] Message content
-```
-
-## 🔒 Security Features
-
-- Environment-based configuration (credentials not in script)
-- Atomic backup operations prevent partial backups
-- Temporary directory usage for safe backup creation
-- Proper file permissions and ownership
-- No sensitive data in logs
-- Validation of all critical paths and permissions
+- Start and end times of backup operations
+- Success/failure status of each step
+- Error messages when operations fail
+- Configuration summary
+- Retention policy actions
 
 ## ⚠️ Error Handling
 
-The script includes comprehensive error handling:
+The script includes comprehensive error handling for:
 
-- Environment variable validation
-- Container existence and status checks
-- Backup path and log file permissions validation
-- Failed backup cleanup
-- Detailed error messages and logging
-- Graceful exit on critical errors
+- Missing environment variables
+- Container availability
+- Directory permissions
+- Backup creation
+- Compression process
+- File cleanup
 
-## 📞 Support
+## 🔄 Recent Changes
 
-If you encounter any issues or have questions, please:
+- Added automatic compression of backup files to ZIP format
+- Added automatic creation of backup directory if it doesn't exist
+- Updated retention policy to handle both SQL and ZIP files
+- Improved error messages and logging
 
-- Open an issue in the GitHub repository
-- Contact the maintainers at support@example.com
+## 🔧 Maintenance
 
-## 📝 License
+The script automatically manages backup retention by:
 
-This project is licensed under the MIT License - see the [LICENSE](../../LICENSE) file for details.
+- Keeping the specified number of most recent backups
+- Removing older backups when the limit is exceeded
+- Cleaning up temporary files and failed backups
+
+## 🔒 Security Notes
+
+- Ensure proper permissions on the backup directory
+- Store database credentials securely in the .env file
+- Regularly rotate backup files
+- Monitor log files for any issues

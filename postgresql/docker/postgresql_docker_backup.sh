@@ -105,12 +105,30 @@ finalize_backup() {
     fi
 }
 
+# Function to zip backup file
+zip_backup_file() {
+    local backup_file="$1"
+    local zip_file="${backup_file%.sql}.zip"
+    
+    log_message "Compressing backup file: $(basename "$backup_file")"
+    
+    if zip -j "$zip_file" "$backup_file"; then
+        log_message "Successfully compressed backup file"
+        # Remove the original SQL file after successful compression
+        rm -f "$backup_file"
+        return 0
+    else
+        log_message "ERROR: Failed to compress backup file"
+        return 1
+    fi
+}
+
 # Function to remove old backups
 remove_old_backups() {
     log_message "Retention Policy: Keeping $BACKUPS_MAX_FILES most recent backups"
 
-    # Get list of backup files sorted by modification time (newest first)
-    local backup_files=($(ls -t "$BACKUPS_BACKUP_PATH"/*.sql 2>/dev/null))
+    # Get list of backup files (both .sql and .zip) sorted by modification time (newest first)
+    local backup_files=($(ls -t "$BACKUPS_BACKUP_PATH"/*.{sql,zip} 2>/dev/null))
     local total_files=${#backup_files[@]}
 
     # If we have more files than BACKUPS_MAX_FILES, remove the oldest ones
@@ -170,8 +188,11 @@ validate_container_name() {
 
 # Function to validate backup path
 validate_backup_path() {
-    if [ ! -w "$(dirname "$BACKUPS_BACKUP_PATH")" ]; then
-        echo "Error: Backup path '$BACKUPS_BACKUP_PATH' is not writable or does not exist."
+    # Create backup directory if it doesn't exist
+    mkdir -p "$BACKUPS_BACKUP_PATH"
+    
+    if [ ! -w "$BACKUPS_BACKUP_PATH" ]; then
+        echo "Error: Backup path '$BACKUPS_BACKUP_PATH' is not writable."
         exit 1
     fi
 }
@@ -243,6 +264,12 @@ fi
 # Finalize backup by moving from temporary to final location
 if ! finalize_backup "$TIMESTAMPED_BACKUP_PATH"; then
     log_message "Failed to finalize backup"
+    exit 1
+fi
+
+# Zip the backup file
+if ! zip_backup_file "$BACKUPS_BACKUP_PATH/${BACKUPS_FILE_PREFIX:-postgres_docker_backup}_$DATETIME.sql"; then
+    log_message "Failed to compress backup file"
     exit 1
 fi
 
